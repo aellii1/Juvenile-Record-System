@@ -148,8 +148,8 @@
                 @Html.ActionLink("Officer Accounts", "Officers", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
             </li>
 
-            <li class="@(currentController == "Admin" && currentAction == "Users" ? "active" : "")">
-                @Html.ActionLink("Officer Permits", "Users", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
+            <li class="@(currentController == "Admin" && currentAction == "OfficerPermits" ? "active" : "")">
+                @Html.ActionLink("Officer Permits", "OfficerPermits", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
             </li>
             <li class="sidebar-category">System Data</li>
 
