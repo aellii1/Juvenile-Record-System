@@ -1,0 +1,186 @@
+﻿@using Juvenile_Record_System
+@model IEnumerable<User>
+
+@{
+    ViewBag.Title = "Admin Dashboard";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var totalUsers = Model != null ? Model.Count() : 0;
+    var activeUsers = Model != null ? Model.Count(u => u.AccountStatus == "Active") : 0;
+}
+
+<!-- Top Header Breadcrumb -->
+<div class="mb-4">
+    <h2 class="fw-bold text-dark mb-1" style="font-size: 1.75rem; letter-spacing: -0.5px;">Admin Dashboard</h2>
+    <p class="text-subtle mb-0">Juvenile Offender Analytics & System Overview</p>
+</div>
+
+<!-- Top Row: Neutral Summary Metric Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="admin-card mb-0">
+            <h6 class="text-uppercase text-subtle fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.8px;">Total Registered Officers</h6>
+            <div class="fw-bold fs-2 text-dark mb-1">@totalUsers</div>
+            <p class="mb-0 text-subtle small">Active database records</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="admin-card mb-0">
+            <h6 class="text-uppercase text-subtle fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.8px;">Active Accounts</h6>
+            <div class="fw-bold fs-2 text-dark mb-1">@activeUsers</div>
+            <p class="mb-0 text-subtle small">Currently operational</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="admin-card mb-0">
+            <h6 class="text-uppercase text-subtle fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.8px;">System Security</h6>
+            <div class="fw-bold fs-2 text-success mb-1">Secure</div>
+            <p class="mb-0 text-subtle small">LocalDB connection stable</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Analytics Section (Matching your Reference UI) -->
+<div class="row g-4 mb-4">
+    <!-- LEFT COLUMN: Dynamic Line Chart & Filter Buttons -->
+    <div class="col-lg-8">
+        <div class="admin-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1">Juvenile Offender Analysis</h5>
+                    <p class="text-subtle mb-0" id="chartSubtitle">Overview of Latest Month</p>
+                </div>
+                <!-- Filter Buttons for Day, Month, Year -->
+                <div class="btn-group btn-group-sm shadow-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="updateChart('day', this)">Day</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="updateChart('month', this)">Month</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="updateChart('year', this)">Year</button>
+                </div>
+            </div>
+
+            <!-- Canvas for Chart.js -->
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="offenderChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Dark Metric Side-Boxes (Matching Reference Style) -->
+    <div class="col-lg-4">
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="p-3 text-white rounded-3 shadow-sm text-center d-flex flex-column justify-content-center" style="background-color: #1e293b; height: 110px;">
+                    <div class="fw-bold fs-4">142</div>
+                    <div class="text-white-50" style="font-size: 0.75rem;">Total Cases</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-3 text-white rounded-3 shadow-sm text-center d-flex flex-column justify-content-center" style="background-color: #334155; height: 110px;">
+                    <div class="fw-bold fs-4">12</div>
+                    <div class="text-white-50" style="font-size: 0.75rem;">New Today</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-3 text-white rounded-3 shadow-sm text-center d-flex flex-column justify-content-center" style="background-color: #334155; height: 110px;">
+                    <div class="fw-bold fs-4">38</div>
+                    <div class="text-white-50" style="font-size: 0.75rem;">Pending Review</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-3 text-white rounded-3 shadow-sm text-center d-flex flex-column justify-content-center" style="background-color: #1e293b; height: 110px;">
+                    <div class="fw-bold fs-4">92%</div>
+                    <div class="text-white-50" style="font-size: 0.75rem;">Resolution Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card mt-3 p-3">
+            <h6 class="fw-bold text-dark mb-2">Quick Status</h6>
+            <p class="text-subtle small mb-0">Analytics auto-sync with live database records and audit trail logs.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Quick Navigation -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <h5 class="fw-bold text-dark mb-2">Quick Navigation</h5>
+            <p class="text-subtle mb-3">Manage records and system configurations.</p>
+            <div class="d-flex flex-wrap gap-3">
+                <a href="@Url.Action("Officers", "Admin")" class="btn btn-dark px-4 py-2 fw-medium shadow-sm" style="border-radius: 8px;">Create New Officer</a>
+                <a href="@Url.Action("Index", "Juveniles")" class="btn btn-outline-secondary px-4 py-2 fw-medium" style="border-radius: 8px;">View Juvenile Records</a>
+                <a href="@Url.Action("AuditLogs", "Admin")" class="btn btn-outline-secondary px-4 py-2 fw-medium" style="border-radius: 8px;">Check Audit Logs</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Include Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+                // Chart configuration datasets
+                const dataDay = {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        { label: 'New Offenses', data: [3, 5, 2, 8, 4, 10, 6], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                        { label: 'Resolved Cases', data: [2, 4, 3, 6, 5, 8, 5], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+                    ]
+                };
+
+                const dataMonth = {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [
+                        { label: 'New Offenses', data: [18, 25, 19, 30], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                        { label: 'Resolved Cases', data: [15, 22, 17, 28], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+                    ]
+                };
+
+                const dataYear = {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        { label: 'New Offenses', data: [45, 52, 38, 60, 55, 70, 65, 80, 75, 90, 85, 95], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                        { label: 'Resolved Cases', data: [40, 48, 35, 55, 50, 62, 60, 72, 70, 82, 80, 90], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+                    ]
+                };
+
+                const ctx = document.getElementById('offenderChart').getContext('2d');
+                let offenderChart = new Chart(ctx, {
+                    type: 'line',
+                    data: dataDay,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                function updateChart(period, btn) {
+                    // Update active button state
+                    document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Update chart data & subtitle based on selection
+                    if (period === 'day') {
+                        offenderChart.data = dataDay;
+                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Week (Daily Breakdown)';
+                    } else if (period === 'month') {
+                        offenderChart.data = dataMonth;
+                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Month (Weekly Breakdown)';
+                    } else if (period === 'year') {
+                        offenderChart.data = dataYear;
+                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Year (Monthly Breakdown)';
+                    }
+                    offenderChart.update();
+                }
+    </script>
+}

@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Juvenile Management System</title>
+
+    <!-- Bootstrap 5 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Modernized Enterprise Admin Stylesheet -->
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Fixed Sidebar Navigation (Original Dark Slate Theme) */
+        #sidebar {
+            min-height: 100vh;
+            background-color: #1e293b;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+            /* Unified Sidebar Header Matching Topbar Height */
+            #sidebar .sidebar-header {
+                height: 70px;
+                padding: 0 20px;
+                background: #0f172a;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                border-bottom: 1px solid #334155;
+            }
+
+            #sidebar ul.components {
+                padding: 15px 0;
+                margin: 0;
+                list-style: none;
+            }
+
+            #sidebar ul li a {
+                padding: 12px 24px;
+                display: block;
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 0.95rem;
+                font-weight: 500;
+                transition: all 0.2s ease-in-out;
+            }
+
+                #sidebar ul li a:hover,
+                #sidebar ul li.active a {
+                    color: #ffffff !important;
+                    background-color: #334155;
+                    border-left: 4px solid #3b82f6;
+                }
+
+        /* Sidebar Category Labels */
+        .sidebar-category {
+            padding: 16px 24px 4px 24px;
+            font-size: 0.725rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+
+        /* Right Side Wrapper */
+        #wrapper {
+            margin-left: 260px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header Bar */
+        #topbar {
+            height: 70px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 35px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        /* Main Content Body */
+        #content {
+            padding: 35px 40px;
+            flex: 1;
+            background-color: #f8fafc;
+        }
+
+        /* Shared Admin Cards */
+        .admin-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .text-subtle {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+    </style>
+
+    @RenderSection("styles", required: false)
+</head>
+<body>
+
+    @{
+        // Capture current route details to evaluate active state dynamically
+        string currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        string currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    }
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <span class="fw-bold" style="font-size: 1.1rem; letter-spacing: -0.2px;">Juvenile System</span>
+            <span class="text-secondary fs-7 fw-semibold mt-1" style="font-size: 0.75rem;">Admin Panel</span>
+        </div>
+
+        <ul class="list-unstyled components">
+            <li class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")">
+                @Html.ActionLink("Admin Home", "Index", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
+            </li>
+
+            <li class="sidebar-category">User & Officer Management</li>
+
+            <li class="@(currentController == "Admin" && currentAction == "Officers" ? "active" : "")">
+                @Html.ActionLink("Officer Accounts", "Officers", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
+            </li>
+
+            <li class="@(currentController == "Admin" && currentAction == "Users" ? "active" : "")">
+                @Html.ActionLink("Officer Permits", "Users", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
+            </li>
+            <li class="sidebar-category">System Data</li>
+
+            <li class="@(currentController == "Juveniles" && currentAction == "Index" ? "active" : "")">
+                @Html.ActionLink("Juvenile Records", "Index", "Juveniles", new { area = "" }, new { @class = "text-decoration-none" })
+            </li>
+
+            <li class="@(currentController == "Admin" && currentAction == "AuditLogs" ? "active" : "")">
+                @Html.ActionLink("Audit Logs", "AuditLogs", "Admin", new { area = "" }, new { @class = "text-decoration-none" })
+            </li>
+        </ul>
+
+        <div class="px-3 my-2">
+            <hr style="border-color: rgba(0,0,0,0.1);" class="my-2">
+        </div>
+
+        <ul class="list-unstyled components pt-0">
+        </ul>
+    </nav>
+
+    <!-- Right Side Wrapper -->
+    <div id="wrapper">
+        <header id="topbar">
+            <div class="fw-semibold text-secondary" style="font-size: 0.95rem;">
+                <span class="text-muted">Portal Workspace</span> <span class="mx-2 text-muted">/</span> <span class="text-dark">@ViewBag.Title</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-dark px-3 py-2 fw-medium shadow-sm" style="font-size: 0.8rem; border-radius: 6px;">Role: Administrator</span>
+                <span class="text-subtle d-none d-md-inline">System Time: @DateTime.Now.ToString("yyyy-MM-dd")</span>
+            </div>
+        </header>
+
+        <div id="content">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JavaScript CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

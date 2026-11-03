@@ -1,0 +1,1 @@
+Removed EnsureProvider() call and SqlProviderServices.Instance access which could cause assembly loading issues. Configured provider in web.config using EntityFramework.SqlClient invariant name. Installed EntityFramework.SqlClient NuGet package if missing.
