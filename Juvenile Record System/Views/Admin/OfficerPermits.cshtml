@@ -1,0 +1,315 @@
+﻿@model IEnumerable<Juvenile_Record_System.Models.User>
+
+@{
+    ViewBag.Title = "Officer Permits";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<style>
+    .action-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.825rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+    }
+
+    .btn-edit {
+        background-color: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
+        .btn-edit:hover {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35em 0.75rem;
+        border-radius: 50rem;
+    }
+</style>
+
+<!-- Floating Success Toast Notification -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div id="floatingToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg position-fixed bottom-0 end-0 m-4 p-2" role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1080; border-radius: 12px; min-width: 300px;">
+        <div class="d-flex align-items-center">
+            <div class="toast-body d-flex align-items-center gap-2 py-2">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                    ✓
+                </div>
+                <span class="fw-semibold small">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var toastElement = document.getElementById('floatingToast');
+            if (toastElement && typeof bootstrap !== 'undefined') {
+                var toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+                toast.show();
+            }
+        });
+    </script>
+}
+
+<!-- Top Page Header Breadcrumb & Live Search -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 text-subtle mb-1" style="font-size: 0.875rem;">
+            <span>User Accounts</span>
+            <span>/</span>
+            <span class="text-dark fw-semibold">Officer Permits</span>
+        </div>
+        <h3 class="fw-bold text-dark mb-0" style="font-size: 1.65rem; letter-spacing: -0.5px;">Assign Officer Roles</h3>
+    </div>
+
+    <!-- Live Search Input -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group shadow-sm" style="width: 260px; border-radius: 10px; overflow: hidden; border: 1px solid #cbd5e1; background: #fff;">
+            <span class="input-group-text bg-transparent border-0 text-muted ps-3 pe-1">🔍</span>
+            <input type="text" id="officerSearchInput" class="form-control border-0 px-2 py-2 shadow-none" placeholder="Search ID, name, username..." style="font-size: 0.85rem;" oninput="filterOfficers()" />
+        </div>
+    </div>
+</div>
+
+<!-- Main Table Container -->
+<div class="admin-card p-0 overflow-hidden border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light" style="border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.6px; color: #475569;">
+                <tr>
+                    <th class="ps-4 py-3">User ID</th>
+                    <th class="py-3">Officer Name</th>
+                    <th class="py-3">Username</th>
+                    <th class="py-3">Assigned Role</th>
+                    <th class="py-3">Account Status</th>
+                    <th class="pe-4 py-3 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var officer in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-semibold text-muted" style="font-size: 0.875rem;">@officer.FormattedUserId</td>
+                            <td>
+                                <div class="fw-bold text-dark">@officer.FullName</div>
+                            </td>
+                            <td class="text-subtle">@@@officer.Username</td>
+                            <td>
+                                @if (officer.Role != null && !string.IsNullOrEmpty(officer.Role.RoleName))
+                                {
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle status-badge">
+                                        @officer.Role.RoleName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle status-badge">
+                                        Unassigned
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (string.Equals(officer.AccountStatus, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle status-badge">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle status-badge">Inactive</span>
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <button type="button" class="action-btn btn-edit" onclick="loadModalContent('@Url.Action("AssignRole", "Admin", new { id = officer.UserId })', 'Assign Officer Role')" title="Assign Permit / Role">
+                                        Assign Permit
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <p class="mb-1 fw-semibold">No active officer accounts found</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div class="modal fade" id="genericModal" tabindex="-1" aria-labelledby="genericModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white px-4 py-3">
+                <h5 class="modal-title fw-bold fs-6" id="genericModalLabel">Loading...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light" id="genericModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-dark" role="status"></div>
+                    <p class="text-muted small mt-2">Loading content...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Live Filtering, AJAX Modal Loading & Toast Handlers -->
+<script>
+    // Real-Time Table Filter Function
+    function filterOfficers() {
+        const input = document.getElementById('officerSearchInput');
+        const filter = input.value.toLowerCase().trim();
+        const tableBody = document.querySelector('table tbody');
+        const rows = tableBody.getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            if (row.cells.length <= 1) continue;
+
+            const userId = row.cells[0].textContent.toLowerCase();
+            const fullName = row.cells[1].textContent.toLowerCase();
+            const username = row.cells[2].textContent.toLowerCase();
+
+            if (userId.includes(filter) || fullName.includes(filter) || username.includes(filter)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    }
+
+    // Modal Loader Function
+    function loadModalContent(url, title) {
+        const modalLabel = document.getElementById('genericModalLabel');
+        const modalBody = document.getElementById('genericModalBody');
+        const modalElement = document.getElementById('genericModal');
+
+        if (modalLabel) {
+            modalLabel.textContent = title;
+        }
+
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-dark" role="status"></div>
+                    <p class="text-muted small mt-2">Loading content...</p>
+                </div>
+            `;
+        }
+
+        if (modalElement && typeof bootstrap !== 'undefined') {
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+            modalInstance.show();
+        }
+
+        fetch(url)
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(function (html) {
+                if (modalBody) {
+                    modalBody.innerHTML = html;
+                }
+            })
+            .catch(function (error) {
+                if (modalBody) {
+                    modalBody.innerHTML = `
+                        <div class="alert alert-danger text-center m-0">
+                            Failed to load content. Please try again.
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    // Bulletproof AJAX Submission for Modal Forms
+    document.addEventListener("submit", function (e) {
+        const form = e.target;
+
+        if (form && form.closest('#genericModalBody')) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const actionUrl = form.action || form.getAttribute('action');
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData
+            })
+                .then(async response => {
+                    if (response.redirected) {
+                        const modalElement = document.getElementById('genericModal');
+                        if (modalElement && typeof bootstrap !== 'undefined') {
+                            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                            if (modalInstance) modalInstance.hide();
+                        }
+
+                        sessionStorage.setItem('showSuccessToast', 'true');
+                        window.location.reload();
+                        return;
+                    }
+
+                    const html = await response.text();
+                    const modalBody = document.getElementById('genericModalBody');
+                    if (modalBody) {
+                        modalBody.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error submitting form via AJAX:', error);
+                });
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (sessionStorage.getItem('showSuccessToast') === 'true') {
+            sessionStorage.removeItem('showSuccessToast');
+
+            let toastElement = document.getElementById('floatingToast');
+            if (!toastElement) {
+                const toastHtml = `
+                    <div id="floatingToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg position-fixed bottom-0 end-0 m-4 p-2" role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1080; border-radius: 12px; min-width: 300px;">
+                        <div class="d-flex align-items-center">
+                            <div class="toast-body d-flex align-items-center gap-2 py-2">
+                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">✓</div>
+                                <span class="fw-semibold small">Officer role updated successfully!</span>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>`;
+                document.body.insertAdjacentHTML('beforeend', toastHtml);
+                toastElement = document.getElementById('floatingToast');
+            }
+
+            if (toastElement && typeof bootstrap !== 'undefined') {
+                var toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+                toast.show();
+            }
+        }
+    });
+</script>

@@ -248,6 +248,7 @@
     <Content Include="Views\Shared\_AdminLayout.cshtml" />
     <Content Include="Views\Admin\AdminModal.cshtml" />
     <Content Include="Views\Admin\Officers.cshtml" />
+    <Content Include="Views\Admin\OfficerPermits.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Views\Juveniles\" />
