@@ -10,7 +10,7 @@ public class AdminController : Controller
     private const string ActiveAccountStatus = "Active";
     private const string InactiveAccountStatus = "Inactive";
 
-    // GET: Admin/Index (Dashboard & List User Accounts)
+    // GET: Admin/Index 
     public ActionResult Index(string searchString)
     {
         var users = db.Users.Include("Role").AsQueryable();
@@ -39,10 +39,8 @@ public class AdminController : Controller
     [HttpGet]
     public ActionResult Officers()
     {
-        // 1. Include "Role" navigation property so Role.RoleName doesn't fail or return null
         var officers = db.Users.Include("Role").ToList();
 
-        // 2. Pass the list to the View so 'Model' in Officers.cshtml receives data
         return View(officers);
     }
 
@@ -51,6 +49,17 @@ public class AdminController : Controller
     public ActionResult AdminModal(string actionType, int? id)
     {
         ViewBag.ActionType = actionType;
+
+        if (actionType == "assignRole")
+        {
+            var officer = db.Users.Find(id);
+            if (officer == null) return HttpNotFound();
+
+            // Use a unique ViewBag name that doesn't match "RoleId"
+            ViewBag.AvailableRoles = new SelectList(db.Roles, "RoleId", "RoleName", officer.RoleId);
+
+            return PartialView("AdminModal", officer);
+        }
 
         if (actionType == "create")
         {
@@ -87,7 +96,7 @@ public class AdminController : Controller
             ModelState["RoleId"].Errors.Clear();
         }
 
-        user.RoleId = 2; // Default baseline role
+        user.RoleId = 2; 
         user.CreatedAt = DateTime.Now;
         if (string.IsNullOrWhiteSpace(user.AccountStatus))
         {
@@ -111,7 +120,6 @@ public class AdminController : Controller
             db.Users.Add(user);
             db.SaveChanges();
 
-            // Success notification
             TempData["SuccessMessage"] = "Officer account successfully created!";
             return RedirectToAction("Officers");
         }
@@ -164,7 +172,7 @@ public class AdminController : Controller
             {
                 existingUser.FullName = user.FullName;
                 existingUser.Username = user.Username;
-                existingUser.AccountStatus = user.AccountStatus.ToUpper(); // Now successfully commits Inactive!
+                existingUser.AccountStatus = user.AccountStatus.ToUpper(); 
 
                 if (!string.IsNullOrEmpty(user.PasswordHash))
                 {
@@ -228,4 +236,38 @@ public class AdminController : Controller
 
         return RedirectToAction("Officers");
     }
+
+    // GET: Admin/OfficerPermits
+    public ActionResult OfficerPermits()
+    {
+        ViewBag.ActivePage = "Officer Permits";
+
+        // Retrieve active officers to display and manage permits/roles
+        var officers = db.Users
+                         .Where(u => u.AccountStatus == "ACTIVE")
+                         .ToList();
+
+        return View(officers);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public ActionResult AssignRole(int userId, int roleId)
+    {
+        var officer = db.Users.Find(userId);
+        if (officer != null)
+        {
+            officer.RoleId = roleId;
+            db.Entry(officer).State = System.Data.Entity.EntityState.Modified;
+            db.SaveChanges();
+
+            TempData["SuccessMessage"] = "Officer permit/role updated successfully!";
+
+            return RedirectToAction("OfficerPermits");
+        }
+
+        return HttpNotFound();
+    }
+
 }
+
