@@ -293,15 +293,15 @@ namespace Juvenile_Record_System.Controllers
             if (officer != null)
             {
                 officer.RoleId = roleId;
-                db.Entry(officer).State = System.Data.Entity.EntityState.Modified;
                 db.SaveChanges();
-
-                TempData["SuccessMessage"] = "Officer permit/role updated successfully!";
-
-                return RedirectToAction("OfficerPermits");
+                TempData["SuccessMessage"] = "Officer role updated successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "User not found.";
             }
 
-            return HttpNotFound();
+            return RedirectToAction("Officers");
         }
     }
 }
