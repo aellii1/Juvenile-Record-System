@@ -135,7 +135,10 @@
                             </td>
                             <td class="pe-4 text-end">
                                 <div class="d-inline-flex gap-1">
-                                    <button type="button" class="action-btn btn-edit" onclick="loadModalContent('@Url.Action("AssignRole", "Admin", new { id = officer.UserId })', 'Assign Officer Role')" title="Assign Permit / Role">
+                                    <button type="button"
+                                            class="action-btn btn-edit"
+                                            onclick="loadModalContent('@Url.Action("AdminModal", "Admin", new { actionType = "assignRole", id = officer.UserId })', 'Assign Officer Role')"
+                                            title="Assign Role / Permit">
                                         Assign Permit
                                     </button>
                                 </div>
@@ -312,4 +315,15 @@
             }
         }
     });
+
+    var genericModalEl = document.getElementById('genericModal');
+    if (genericModalEl) {
+        genericModalEl.addEventListener('hidden.bs.modal', function (event) {
+            // Blur any active element inside the modal so focus isn't trapped/hidden
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
+        });
+    }
+
 </script>

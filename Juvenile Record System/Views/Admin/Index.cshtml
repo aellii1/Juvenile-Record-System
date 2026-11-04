@@ -8,6 +8,31 @@
     var totalUsers = Model != null ? Model.Count() : 0;
     var activeUsers = Model != null ? Model.Count(u => u.AccountStatus == "Active") : 0;
 }
+<!-- Floating Success Toast Notification -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div id="floatingToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg position-fixed bottom-0 end-0 m-4 p-2" role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1080; border-radius: 12px; min-width: 300px;">
+        <div class="d-flex align-items-center">
+            <div class="toast-body d-flex align-items-center gap-2 py-2">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                    ✓
+                </div>
+                <span class="fw-semibold small">@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var toastElement = document.getElementById('floatingToast');
+            if (toastElement && typeof bootstrap !== 'undefined') {
+                var toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+                toast.show();
+            }
+        });
+    </script>
+}
 
 <!-- Top Header Breadcrumb -->
 <div class="mb-4">
@@ -122,65 +147,65 @@
     <!-- Include Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-                // Chart configuration datasets
-                const dataDay = {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [
-                        { label: 'New Offenses', data: [3, 5, 2, 8, 4, 10, 6], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
-                        { label: 'Resolved Cases', data: [2, 4, 3, 6, 5, 8, 5], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
-                    ]
-                };
+        // Chart configuration datasets
+        const dataDay = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [
+                { label: 'New Offenses', data: [3, 5, 2, 8, 4, 10, 6], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                { label: 'Resolved Cases', data: [2, 4, 3, 6, 5, 8, 5], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+            ]
+        };
 
-                const dataMonth = {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [
-                        { label: 'New Offenses', data: [18, 25, 19, 30], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
-                        { label: 'Resolved Cases', data: [15, 22, 17, 28], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
-                    ]
-                };
+        const dataMonth = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+                { label: 'New Offenses', data: [18, 25, 19, 30], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                { label: 'Resolved Cases', data: [15, 22, 17, 28], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+            ]
+        };
 
-                const dataYear = {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [
-                        { label: 'New Offenses', data: [45, 52, 38, 60, 55, 70, 65, 80, 75, 90, 85, 95], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
-                        { label: 'Resolved Cases', data: [40, 48, 35, 55, 50, 62, 60, 72, 70, 82, 80, 90], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
-                    ]
-                };
+        const dataYear = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                { label: 'New Offenses', data: [45, 52, 38, 60, 55, 70, 65, 80, 75, 90, 85, 95], borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, fill: false },
+                { label: 'Resolved Cases', data: [40, 48, 35, 55, 50, 62, 60, 72, 70, 82, 80, 90], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: 0.3, fill: false }
+            ]
+        };
 
-                const ctx = document.getElementById('offenderChart').getContext('2d');
-                let offenderChart = new Chart(ctx, {
-                    type: 'line',
-                    data: dataDay,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-
-                function updateChart(period, btn) {
-                    // Update active button state
-                    document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
-                    // Update chart data & subtitle based on selection
-                    if (period === 'day') {
-                        offenderChart.data = dataDay;
-                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Week (Daily Breakdown)';
-                    } else if (period === 'month') {
-                        offenderChart.data = dataMonth;
-                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Month (Weekly Breakdown)';
-                    } else if (period === 'year') {
-                        offenderChart.data = dataYear;
-                        document.getElementById('chartSubtitle').innerText = 'Overview of Latest Year (Monthly Breakdown)';
-                    }
-                    offenderChart.update();
+        const ctx = document.getElementById('offenderChart').getContext('2d');
+        let offenderChart = new Chart(ctx, {
+            type: 'line',
+            data: dataDay,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
                 }
+            }
+        });
+
+        function updateChart(period, btn) {
+            // Update active button state
+            document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update chart data & subtitle based on selection
+            if (period === 'day') {
+                offenderChart.data = dataDay;
+                document.getElementById('chartSubtitle').innerText = 'Overview of Latest Week (Daily Breakdown)';
+            } else if (period === 'month') {
+                offenderChart.data = dataMonth;
+                document.getElementById('chartSubtitle').innerText = 'Overview of Latest Month (Weekly Breakdown)';
+            } else if (period === 'year') {
+                offenderChart.data = dataYear;
+                document.getElementById('chartSubtitle').innerText = 'Overview of Latest Year (Monthly Breakdown)';
+            }
+            offenderChart.update();
+        }
     </script>
 }
