@@ -79,19 +79,27 @@ namespace Juvenile_Record_System.Controllers
         // Helper Method for Role-Based Redirection
         private ActionResult RedirectUserByRole(string role)
         {
-            switch (role.Trim().ToLower())
+            string normalizedRole = (role ?? "").Trim().ToLower();
+
+            switch (normalizedRole)
             {
                 case "admin":
+                case "administrator":
                     return RedirectToAction("Index", "Admin");
 
                 case "enforcement":
+                case "enforcement officer":
+                case "officer":
                     return RedirectToAction("Index", "Enforcement");
 
                 case "review":
+                case "review officer":
+                case "reviewer":
                     return RedirectToAction("Index", "Review");
 
                 default:
-                    // Fallback route if role is unassigned or unknown
+                    // Clear session so Login() doesn't loop infinitely on an unrecognized role
+                    Session.Clear();
                     TempData["ErrorMessage"] = "Unauthorized role assignment.";
                     return RedirectToAction("Login", "Authentication");
             }
