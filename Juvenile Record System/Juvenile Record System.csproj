@@ -173,12 +173,16 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AdminController.cs" />
+    <Compile Include="Controllers\AuthenticationController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\JuvenilesController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helper\AuthorizeRoleAttribute.cs" />
+    <Compile Include="Helper\PasswordHasher.cs" />
     <Compile Include="Models\AuditLog.cs" />
+    <Compile Include="Models\Authentication.cs" />
     <Compile Include="Models\Guardian.cs" />
     <Compile Include="Models\Juvenile.cs" />
     <Compile Include="Models\JuvenileContext.cs" />
@@ -249,6 +253,7 @@
     <Content Include="Views\Admin\AdminModal.cshtml" />
     <Content Include="Views\Admin\Officers.cshtml" />
     <Content Include="Views\Admin\OfficerPermits.cshtml" />
+    <Content Include="Views\Authentication\Login.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Views\Juveniles\" />

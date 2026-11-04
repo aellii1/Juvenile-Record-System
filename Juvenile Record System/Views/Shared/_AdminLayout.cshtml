@@ -118,6 +118,17 @@
             color: #64748b;
             font-size: 0.875rem;
         }
+
+        /* Hover profile*/
+        .user-profile-trigger {
+            transition: background-color 0.2s ease, border-radius 0.2s ease;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        .user-profile-trigger:hover {
+            background-color: rgba(0, 0, 0, 0.06); 
+        }
     </style>
 
     @RenderSection("styles", required: false)
@@ -128,6 +139,13 @@
         // Capture current route details to evaluate active state dynamically
         string currentController = ViewContext.RouteData.Values["controller"]?.ToString();
         string currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+        string fullName = Session["FullName"]?.ToString() ?? Session["Username"]?.ToString() ?? "User";
+        string initial = !string.IsNullOrEmpty(fullName) ? fullName.Trim().Substring(0, 1).ToUpper() : "U";
+        string roleName = Session["RoleName"]?.ToString() ?? "Administrator";
+
+        int userId = Session["UserId"] != null ? Convert.ToInt32(Session["UserId"]) : 0;
+        string formattedUserId = userId > 0 ? $"U-{userId:D3}" : "U-000";
     }
 
     <!-- Sidebar Navigation -->
@@ -177,8 +195,39 @@
                 <span class="text-muted">Portal Workspace</span> <span class="mx-2 text-muted">/</span> <span class="text-dark">@ViewBag.Title</span>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-dark px-3 py-2 fw-medium shadow-sm" style="font-size: 0.8rem; border-radius: 6px;">Role: Administrator</span>
-                <span class="text-subtle d-none d-md-inline">System Time: @DateTime.Now.ToString("yyyy-MM-dd")</span>
+                <!-- Role Badge -->
+                <span class="badge bg-dark px-3 py-2 fw-medium shadow-sm" style="font-size: 0.8rem; border-radius: 6px;">
+                    Role: @(ViewBag.AdminRole ?? "Administrator")
+                </span>
+
+                <!-- Profile Avatar + Dropdown Menu -->
+                <div class="dropdown">
+                    <a href="#" class="user-profile-trigger d-flex align-items-center gap-2 text-decoration-none dropdown-toggle border-0 bg-transparent shadow-none px-2 py-1"
+                       id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm"
+                             style="width: 32px; height: 32px; font-size: 14px; line-height: 1;">
+                            @(ViewBag.AdminInitial ?? "A")
+                        </div>
+                        <span class="text-subtle fw-medium d-none d-md-inline" style="font-size: 0.9rem;">
+                            @(ViewBag.AdminFullName ?? "Admin User")
+                        </span>
+                    </a>
+
+                    <!-- Dropdown Menu -->
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="userDropdown">
+                        <li class="px-3 py-2 border-bottom">
+                            <div class="fw-semibold text-dark small">@(ViewBag.AdminFullName ?? "Admin User")</div>
+                            <div class="text-muted small" style="font-size: 0.75rem;">ID: @formattedUserId</div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2 text-danger pt-2"
+                               href="@Url.Action("Logout", "Authentication")">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Logout</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </header>
 
