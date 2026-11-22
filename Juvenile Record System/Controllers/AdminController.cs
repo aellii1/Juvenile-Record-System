@@ -316,7 +316,7 @@ namespace Juvenile_Record_System.Controllers
 
             // Retrieve active officers to display and manage permits/roles
             var officers = db.Users
-                             .Where(u => u.AccountStatus == ActiveAccountStatus || u.AccountStatus == "ACTIVE")
+                             .Where(u => u.AccountStatus == "ACTIVE")
                              .ToList();
 
             return View(officers);
@@ -342,3 +342,4 @@ namespace Juvenile_Record_System.Controllers
         }
     }
 }
+
