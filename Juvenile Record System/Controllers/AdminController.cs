@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Juvenile_Record_System.Helpers;
+using Juvenile_Record_System.Models;
+using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
-using Juvenile_Record_System.Models;
-using Juvenile_Record_System.Helpers;
-
 
 namespace Juvenile_Record_System.Controllers
 {
@@ -15,10 +16,28 @@ namespace Juvenile_Record_System.Controllers
         private const string ActiveAccountStatus = "Active";
         private const string InactiveAccountStatus = "Inactive";
 
+        private static readonly string[] AllModules =
+        {
+            "ScanBiometrics",
+            "Authenticate",
+            "CheckRecords",
+            "ManageProfile",
+            "ProcessPenalty",
+            "JuvenileRecords"
+        };
+
+        private static readonly string[] DefaultEnforcementModules =
+        {
+            "ScanBiometrics",
+            "Authenticate",
+            "CheckRecords",
+            "ManageProfile"
+        };
+
         // GET: Admin/Index
         public ActionResult Index(string searchString)
         {
-            // 1. Welcome Toast Logic 
+            // 1. Welcome Toast Logic
             if (Session["ShowWelcomeMessage"] != null && (bool)Session["ShowWelcomeMessage"] == true)
             {
                 string displayName = Session["FullName"]?.ToString() ?? Session["Username"]?.ToString() ?? "Administrator";
@@ -70,12 +89,59 @@ namespace Juvenile_Record_System.Controllers
             base.Dispose(disposing);
         }
 
+        private Dictionary<int, string[]> GetPermitMap()
+        {
+            return HttpRuntime.Cache["UserPermitMap"] as Dictionary<int, string[]>
+                   ?? new Dictionary<int, string[]>();
+        }
+
+        private void SavePermitMap(Dictionary<int, string[]> permitMap)
+        {
+            HttpRuntime.Cache["UserPermitMap"] = permitMap;
+        }
+
+        private string[] ResolvePermitsForUser(User user, Dictionary<int, string[]> permitMap)
+        {
+            string roleName = user?.Role?.RoleName ?? string.Empty;
+            bool isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                           roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase);
+
+            if (isAdmin)
+            {
+                return new[] { "All Modules (Admin)" };
+            }
+
+            if (user != null && permitMap != null && permitMap.TryGetValue(user.UserId, out string[] savedPermits))
+            {
+                return savedPermits ?? Array.Empty<string>();
+            }
+
+            bool isEnforcement = roleName.IndexOf("Enforcement", StringComparison.OrdinalIgnoreCase) >= 0;
+            return isEnforcement ? DefaultEnforcementModules : AllModules;
+        }
+
         // GET: Admin/Officers
         [HttpGet]
         public ActionResult Officers()
         {
             var officers = db.Users.Include("Role").ToList();
+            var userPermitMap = GetPermitMap();
+            var displayMap = new Dictionary<int, string[]>();
 
+            foreach (var officer in officers)
+            {
+                var resolved = ResolvePermitsForUser(officer, userPermitMap);
+                if (resolved.Length == 1 && resolved[0] == "All Modules (Admin)")
+                {
+                    displayMap[officer.UserId] = resolved;
+                }
+                else
+                {
+                    displayMap[officer.UserId] = resolved.Length > 0 ? resolved : new[] { "No Modules" };
+                }
+            }
+
+            ViewBag.OfficerPermitsMap = displayMap;
             return View(officers);
         }
 
@@ -87,12 +153,25 @@ namespace Juvenile_Record_System.Controllers
 
             if (actionType == "assignRole")
             {
-                var officer = db.Users.Find(id);
+                var officer = db.Users.Include("Role").FirstOrDefault(u => u.UserId == id);
                 if (officer == null) return HttpNotFound();
 
-                // Use a unique ViewBag name that doesn't match "RoleId"
                 ViewBag.AvailableRoles = new SelectList(db.Roles, "RoleId", "RoleName", officer.RoleId);
 
+                var permitMap = GetPermitMap();
+                string[] currentPermits;
+
+                if (permitMap.TryGetValue(officer.UserId, out string[] savedPermits))
+                {
+                    currentPermits = savedPermits ?? Array.Empty<string>();
+                }
+                else
+                {
+                    // Use the same permit source that Officer Details uses instead of resetting to all 4 defaults
+                    currentPermits = ParseUserPermits(officer) ?? Array.Empty<string>();
+                }
+
+                ViewBag.SelectedPermits = currentPermits;
                 return PartialView("AdminModal", officer);
             }
 
@@ -109,6 +188,12 @@ namespace Juvenile_Record_System.Controllers
             else if (actionType == "details" && id.HasValue)
             {
                 var user = db.Users.Include("Role").FirstOrDefault(u => u.UserId == id.Value);
+                if (user == null) return HttpNotFound();
+
+                var userPermitMap = GetPermitMap();
+                ViewBag.OfficerPermits = ResolvePermitsForUser(user, userPermitMap);
+                ViewBag.OfficerPermits = ParseUserPermits(user);
+
                 return PartialView("AdminModal", user);
             }
             else if (actionType == "delete" && id.HasValue)
@@ -131,8 +216,25 @@ namespace Juvenile_Record_System.Controllers
                 ModelState["RoleId"].Errors.Clear();
             }
 
+            user.FullName = user.FullName?.Trim();
+            user.Username = user.Username?.Trim();
+            user.Email = string.IsNullOrWhiteSpace(user.Email) ? null : user.Email.Trim();
+            user.PhoneNumber = string.IsNullOrWhiteSpace(user.PhoneNumber) ? null : user.PhoneNumber.Trim();
+            user.HomeAddress = string.IsNullOrWhiteSpace(user.HomeAddress) ? null : user.HomeAddress.Trim();
+
+            if (!string.IsNullOrEmpty(user.PhoneNumber) && !user.PhoneNumber.All(char.IsDigit))
+            {
+                ModelState.AddModelError("PhoneNumber", "Phone number must contain numbers only.");
+            }
+
+            if (!string.IsNullOrEmpty(user.Username) && db.Users.Any(u => u.Username == user.Username))
+            {
+                ModelState.AddModelError("Username", "Username is already taken.");
+            }
+
             user.RoleId = 2;
             user.CreatedAt = DateTime.Now;
+
             if (string.IsNullOrWhiteSpace(user.AccountStatus))
             {
                 user.AccountStatus = ActiveAccountStatus;
@@ -152,11 +254,34 @@ namespace Juvenile_Record_System.Controllers
 
             if (ModelState.IsValid)
             {
-                db.Users.Add(user);
-                db.SaveChanges();
+                if (!string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    user.PasswordHash = PasswordHasher.HashPassword(user.PasswordHash);
+                }
 
-                TempData["SuccessMessage"] = "Officer account successfully created!";
-                return RedirectToAction("Officers");
+                try
+                {
+                    db.Users.Add(user);
+                    db.SaveChanges();
+
+                    TempData["SuccessMessage"] = "Officer account successfully created!";
+                    return RedirectToAction("Officers");
+                }
+                catch (System.Data.Entity.Infrastructure.DbUpdateException ex)
+                {
+                    var sqlError = ex.InnerException?.InnerException?.Message ?? ex.InnerException?.Message ?? ex.Message;
+                    ModelState.AddModelError("", "Database Error: " + sqlError);
+                }
+                catch (System.Data.Entity.Validation.DbEntityValidationException dbEx)
+                {
+                    foreach (var validationErrors in dbEx.EntityValidationErrors)
+                    {
+                        foreach (var validationError in validationErrors.ValidationErrors)
+                        {
+                            ModelState.AddModelError("", $"{validationError.PropertyName}: {validationError.ErrorMessage}");
+                        }
+                    }
+                }
             }
 
             ViewBag.ActionType = "create";
@@ -184,16 +309,21 @@ namespace Juvenile_Record_System.Controllers
                 ModelState["UserId"].Errors.Clear();
             }
 
+            var trimmedPhone = string.IsNullOrWhiteSpace(user.PhoneNumber) ? null : user.PhoneNumber.Trim();
+            if (!string.IsNullOrEmpty(trimmedPhone) && !trimmedPhone.All(char.IsDigit))
+            {
+                ModelState.AddModelError("PhoneNumber", "Phone number must contain numbers only.");
+            }
+
             var accountStatus = (user.AccountStatus ?? string.Empty).Trim();
 
-            // Standardize to uppercase for database compatibility
-            if (string.Equals(accountStatus, "Active", StringComparison.OrdinalIgnoreCase) || string.Equals(accountStatus, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(accountStatus, ActiveAccountStatus, StringComparison.OrdinalIgnoreCase))
             {
-                user.AccountStatus = "ACTIVE";
+                user.AccountStatus = ActiveAccountStatus;
             }
-            else if (string.Equals(accountStatus, "Inactive", StringComparison.OrdinalIgnoreCase) || string.Equals(accountStatus, "INACTIVE", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(accountStatus, InactiveAccountStatus, StringComparison.OrdinalIgnoreCase))
             {
-                user.AccountStatus = "INACTIVE";
+                user.AccountStatus = InactiveAccountStatus;
             }
             else
             {
@@ -205,13 +335,17 @@ namespace Juvenile_Record_System.Controllers
                 var existingUser = db.Users.Find(user.UserId);
                 if (existingUser != null)
                 {
-                    existingUser.FullName = user.FullName;
-                    existingUser.Username = user.Username;
-                    existingUser.AccountStatus = user.AccountStatus.ToUpper();
+                    existingUser.FullName = user.FullName?.Trim();
+                    existingUser.Username = user.Username?.Trim();
+                    existingUser.AccountStatus = user.AccountStatus;
+                    existingUser.Email = string.IsNullOrWhiteSpace(user.Email) ? null : user.Email.Trim();
+                    existingUser.PhoneNumber = trimmedPhone;
+                    existingUser.Birthdate = user.Birthdate;
+                    existingUser.HomeAddress = string.IsNullOrWhiteSpace(user.HomeAddress) ? null : user.HomeAddress.Trim();
 
                     if (!string.IsNullOrEmpty(user.PasswordHash))
                     {
-                        existingUser.PasswordHash = user.PasswordHash;
+                        existingUser.PasswordHash = PasswordHasher.HashPassword(user.PasswordHash);
                     }
 
                     try
@@ -225,33 +359,21 @@ namespace Juvenile_Record_System.Controllers
                         var sqlError = ex.InnerException?.InnerException?.Message ?? ex.InnerException?.Message ?? ex.Message;
                         ModelState.AddModelError("", "Database Error: " + sqlError);
                     }
+                    catch (System.Data.Entity.Validation.DbEntityValidationException dbEx)
+                    {
+                        foreach (var validationErrors in dbEx.EntityValidationErrors)
+                        {
+                            foreach (var validationError in validationErrors.ValidationErrors)
+                            {
+                                ModelState.AddModelError("", $"{validationError.PropertyName}: {validationError.ErrorMessage}");
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     return HttpNotFound();
                 }
-            }
-
-            try
-            {
-                db.SaveChanges();
-                TempData["SuccessMessage"] = "Officer account successfully updated!";
-                return RedirectToAction("Officers");
-            }
-            catch (System.Data.Entity.Validation.DbEntityValidationException dbEx)
-            {
-                foreach (var validationErrors in dbEx.EntityValidationErrors)
-                {
-                    foreach (var validationError in validationErrors.ValidationErrors)
-                    {
-                        ModelState.AddModelError("", $"{validationError.PropertyName}: {validationError.ErrorMessage}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                var sqlError = ex.InnerException?.InnerException?.Message ?? ex.InnerException?.Message ?? ex.Message;
-                ModelState.AddModelError("", "Database Error: " + sqlError);
             }
 
             ViewBag.ActionType = "edit";
@@ -277,32 +399,104 @@ namespace Juvenile_Record_System.Controllers
         {
             ViewBag.ActivePage = "Officer Permits";
 
-            // Retrieve active officers to display and manage permits/roles
             var officers = db.Users
-                             .Where(u => u.AccountStatus == "ACTIVE")
+                             .Include("Role")
+                             .Where(u => u.AccountStatus == "ACTIVE" || u.AccountStatus == ActiveAccountStatus)
                              .ToList();
+
+            var userPermitMap = GetPermitMap();
+            var displayMap = new Dictionary<int, string[]>();
+            foreach (var officer in officers)
+            {
+                displayMap[officer.UserId] = ResolvePermitsForUser(officer, userPermitMap);
+            }
+            ViewBag.OfficerPermitsMap = displayMap;
 
             return View(officers);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult AssignRole(int userId, int roleId)
+        public ActionResult AssignRole(int userId, int roleId, string[] selectedPermits = null)
         {
             var officer = db.Users.Find(userId);
             if (officer != null)
             {
                 officer.RoleId = roleId;
+
+                var role = db.Roles.Find(roleId);
+                string roleName = role?.RoleName ?? string.Empty;
+                bool isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                               roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase);
+                bool isEnforcement = roleName.IndexOf("Enforcement", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                string[] finalPermits;
+                if (isAdmin)
+                {
+                    finalPermits = AllModules;
+                }
+                else if (isEnforcement)
+                {
+                    finalPermits = (selectedPermits ?? Array.Empty<string>())
+                        .Where(p => !string.Equals(p, "ProcessPenalty", StringComparison.OrdinalIgnoreCase) &&
+                                    !string.Equals(p, "JuvenileRecords", StringComparison.OrdinalIgnoreCase))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                }
+                else
+                {
+                    finalPermits = (selectedPermits ?? AllModules)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                }
+
+                // Save comma-separated permits directly into SQL Server
+                officer.AllowedPermits = string.Join(",", finalPermits);
                 db.SaveChanges();
-                TempData["SuccessMessage"] = "Officer role updated successfully.";
+
+                if (Session["UserId"] != null && Convert.ToInt32(Session["UserId"]) == userId)
+                {
+                    Session["AllowedPermits"] = finalPermits;
+                }
+
+                TempData["SuccessMessage"] = "Officer role and permits updated successfully.";
             }
             else
             {
                 TempData["ErrorMessage"] = "User not found.";
             }
 
+            string refererPath = Request.UrlReferrer?.AbsolutePath ?? string.Empty;
+            if (refererPath.IndexOf("OfficerPermits", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return RedirectToAction("OfficerPermits");
+            }
+
             return RedirectToAction("Officers");
+        }
+
+        private string[] ParseUserPermits(User user)
+        {
+            string roleName = user?.Role?.RoleName ?? string.Empty;
+            bool isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                           roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase);
+
+            if (isAdmin)
+            {
+                return new[] { "All Modules (Admin)" };
+            }
+
+            if (user != null && user.AllowedPermits != null)
+            {
+                return user.AllowedPermits
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .ToArray();
+            }
+
+            // Fallback only if AllowedPermits has never been saved yet (NULL in DB)
+            bool isEnforcement = roleName.IndexOf("Enforcement", StringComparison.OrdinalIgnoreCase) >= 0;
+            return isEnforcement ? DefaultEnforcementModules : AllModules;
         }
     }
 }
-

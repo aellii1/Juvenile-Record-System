@@ -1,0 +1,152 @@
+﻿@{
+    ViewBag.Title = "Enforcement Dashboard";
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
+}
+
+<!-- Dashboard Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1">Enforcement Dashboard</h2>
+        <p class="text-subtle mb-0">Welcome back, @(ViewBag.OfficerFullName ?? "Officer"). Manage checkpoint scans and juvenile verification.</p>
+    </div>
+</div>
+
+<!-- Quick Metric / Status Cards -->
+<!--<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="admin-card h-100 p-4 border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Biometric Device</span>
+                    <h4 class="fw-bold text-dark mt-1 mb-0">Connected</h4>
+                </div>
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-cpu fs-4"></i>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">Face ID & Fingerprint scanner ready for input.</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="admin-card h-100 p-4 border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Active Session</span>
+                    <h4 class="fw-bold text-dark mt-1 mb-0">Secured</h4>
+                </div>
+                <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-shield-check fs-4"></i>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">Officer permissions verified via active token.</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="admin-card h-100 p-4 border-start border-info border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem;">Checkpoint Scope</span>
+                    <h4 class="fw-bold text-dark mt-1 mb-0">Active</h4>
+                </div>
+                <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-geo-alt fs-4"></i>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">Screening active juveniles and matching profiles.</p>
+        </div>
+    </div>
+</div>-->
+
+<!-- Main Quick Actions Grid -->
+<!--<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <h5 class="fw-bold text-dark mb-3">Checkpoint Modules & Workflows</h5>
+            <p class="text-subtle mb-4">Select a module below to initiate checkpoint screening, biometric verification, or profile updates.</p>
+
+            <div class="list-group list-group-flush gap-2">
+                <a href="@Url.Action("ScanBiometrics", "Enforcement")" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border rounded-3 shadow-sm hover-shadow transition">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-upc-scan fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">1. Scan Face ID & Biometrics</h6>
+                            <small class="text-muted">Capture face image and fingerprint inputs at the checkpoint[cite: 5, 6].</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("Authenticate", "Enforcement")" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border rounded-3 shadow-sm hover-shadow transition">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded bg-success text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-fingerprint fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">2. Authenticate Offender</h6>
+                            <small class="text-muted">Extract biometric features and match templates against database records[cite: 30, 31].</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("CheckRecords", "Enforcement")" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border rounded-3 shadow-sm hover-shadow transition">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded bg-warning text-dark d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-journal-check fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">3. Check Offender Records</h6>
+                            <small class="text-muted">Determine whether the individual is a new or existing offender[cite: 15, 16].</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("ManageProfile", "Enforcement")" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border rounded-3 shadow-sm hover-shadow transition">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded bg-dark text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-person-badge fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">4. Manage Offender Profile</h6>
+                            <small class="text-muted">Create a new registration or update existing juvenile profile details[cite: 10, 12].</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+    </div>-->
+
+    <!-- Right Side Widget: Officer Details -->
+    <!--<div class="col-lg-4">
+        <div class="admin-card text-center p-4">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold shadow-sm" style="width: 64px; height: 64px; font-size: 24px;">
+                @(ViewBag.OfficerInitial ?? "E")
+            </div>
+            <h5 class="fw-bold text-dark mb-1">@(ViewBag.OfficerFullName ?? "Enforcement Officer")</h5>
+            <p class="text-muted small mb-3">@(ViewBag.FormattedUserId ?? "U-000")</p>
+
+            <hr class="text-muted my-3">
+
+            <div class="text-start">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Assigned Role:</span>
+                    <span class="fw-semibold small text-dark">Enforcement Officer</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Access Scope:</span>
+                    <span class="fw-semibold small text-dark">Checkpoint Modules</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted small">System Status:</span>
+                    <span class="badge bg-success bg-opacity-10 text-success">Authorized</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>-->

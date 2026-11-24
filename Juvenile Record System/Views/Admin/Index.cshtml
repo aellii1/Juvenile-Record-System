@@ -3,11 +3,12 @@
 
 @{
     ViewBag.Title = "Admin Dashboard";
-    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    Layout = "~/Views/Shared/_MainLayout.cshtml";
 
     var totalUsers = Model != null ? Model.Count() : 0;
     var activeUsers = Model != null ? Model.Count(u => u.AccountStatus == "Active") : 0;
 }
+
 <!-- Floating Success Toast Notification -->
 @if (TempData["SuccessMessage"] != null)
 {

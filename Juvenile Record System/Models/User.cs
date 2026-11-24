@@ -44,8 +44,28 @@ namespace Juvenile_Record_System.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        [StringLength(20)]
+        [RegularExpression(@"^\d*$", ErrorMessage = "Phone number must contain numbers only.")]
+        [Column("phone_number")]
+        public string PhoneNumber { get; set; }
+
+        [StringLength(255)]
+        [Column("home_address")]
+        public string HomeAddress { get; set; }
+
+        [DataType(DataType.Date)]
+        [Column("birthdate")]
+        public DateTime? Birthdate { get; set; }
+
+        [StringLength(100)]
+        [Column("email")]
+        public string Email { get; set; }
+
         [ForeignKey("RoleId")]
         public virtual Role Role { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.Column("AllowedPermits")]
+        public string AllowedPermits { get; set; }
 
         // Helper property to display IDs like U-001, U-002, etc.
         [NotMapped]
