@@ -64,6 +64,9 @@ namespace Juvenile_Record_System.Models
         [ForeignKey("RoleId")]
         public virtual Role Role { get; set; }
 
+        [System.ComponentModel.DataAnnotations.Schema.Column("AllowedPermits")]
+        public string AllowedPermits { get; set; }
+
         // Helper property to display IDs like U-001, U-002, etc.
         [NotMapped]
         public string FormattedUserId => $"U-{UserId:D3}";

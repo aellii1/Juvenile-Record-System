@@ -177,7 +177,7 @@
     </div>
 </div>
 
-<!-- JavaScript for Live Filtering, AJAX Modal Loading & Toast Handlers -->
+@*script*@
 <script>
     // Real-Time Table Filter Function
     function filterOfficers() {
@@ -199,6 +199,101 @@
                 row.style.display = "";
             } else {
                 row.style.display = "none";
+            }
+        }
+    }
+
+    // Apply Role-Based Permit Rules inside Assign Role Modal
+    function applyRolePermitRules(resetCheckboxes = false) {
+        const roleSelect = document.getElementById("rolePermitSelect");
+        if (!roleSelect) return;
+
+        const wrapper = document.getElementById("permitCheckboxesWrapper");
+        const enforcementBoxes = document.querySelectorAll(".enforcement-default");
+        const reviewBoxes = document.querySelectorAll(".restricted-module");
+        const checkpointLockBadges = document.querySelectorAll(".checkpoint-lock-badge");
+        const reviewLockBadges = document.querySelectorAll("#penaltyLockBadge, #juvenileLockBadge");
+        const helperNote = document.getElementById("permitHelperNote");
+
+        const savedAttr = wrapper ? (wrapper.getAttribute("data-saved-permits") || "") : "";
+        const savedList = savedAttr
+            .split(",")
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean);
+
+        const selectedText = (roleSelect.options[roleSelect.selectedIndex]?.text || "").trim().toLowerCase();
+        const isAdmin = selectedText === "admin" || selectedText === "administrator";
+        const isEnforcement = selectedText.includes("enforcement");
+        const isReview = selectedText.includes("review");
+
+        if (isAdmin) {
+            if (wrapper) wrapper.classList.add("d-none");
+            document.querySelectorAll(".permit-checkbox").forEach(cb => {
+                cb.disabled = false;
+                if (resetCheckboxes) cb.checked = true;
+            });
+            return;
+        }
+
+        if (wrapper) wrapper.classList.remove("d-none");
+
+        if (isEnforcement) {
+            enforcementBoxes.forEach(cb => {
+                cb.disabled = false;
+                if (resetCheckboxes) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = savedList.includes(cb.value.toLowerCase());
+                }
+            });
+
+            reviewBoxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = true;
+            });
+
+            checkpointLockBadges.forEach(badge => badge.classList.add("d-none"));
+            reviewLockBadges.forEach(badge => badge.classList.remove("d-none"));
+
+            if (helperNote) {
+                helperNote.textContent = "Enforcement Officer selected: Process Penalty and Juvenile Records are locked; checkpoint modules are unlocked.";
+            }
+        } else if (isReview) {
+            enforcementBoxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = true;
+            });
+
+            reviewBoxes.forEach(cb => {
+                cb.disabled = false;
+                if (resetCheckboxes) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = savedList.includes(cb.value.toLowerCase());
+                }
+            });
+
+            checkpointLockBadges.forEach(badge => badge.classList.remove("d-none"));
+            reviewLockBadges.forEach(badge => badge.classList.add("d-none"));
+
+            if (helperNote) {
+                helperNote.textContent = "Review Officer selected: Checkpoint modules are locked; Process Penalty and Juvenile Records are unlocked.";
+            }
+        } else {
+            document.querySelectorAll(".permit-checkbox").forEach(cb => {
+                cb.disabled = false;
+                if (resetCheckboxes) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = savedList.includes(cb.value.toLowerCase());
+                }
+            });
+
+            checkpointLockBadges.forEach(badge => badge.classList.add("d-none"));
+            reviewLockBadges.forEach(badge => badge.classList.add("d-none"));
+
+            if (helperNote) {
+                helperNote.textContent = "All modules unlocked. Toggle checkboxes as needed before saving.";
             }
         }
     }
@@ -227,7 +322,10 @@
             modalInstance.show();
         }
 
-        fetch(url)
+        const separator = url.includes('?') ? '&' : '?';
+        const freshUrl = `${url}${separator}_t=${Date.now()}`;
+
+        fetch(freshUrl, { cache: 'no-store' })
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -237,9 +335,10 @@
             .then(function (html) {
                 if (modalBody) {
                     modalBody.innerHTML = html;
+                    applyRolePermitRules(false);
                 }
             })
-            .catch(function (error) {
+            .catch(function () {
                 if (modalBody) {
                     modalBody.innerHTML = `
                         <div class="alert alert-danger text-center m-0">
@@ -249,6 +348,13 @@
                 }
             });
     }
+
+    // Listen for Role Dropdown Changes inside Modal
+    document.addEventListener("change", function (e) {
+        if (e.target && e.target.id === "rolePermitSelect") {
+            applyRolePermitRules(true);
+        }
+    });
 
     // Bulletproof AJAX Submission for Modal Forms
     document.addEventListener("submit", function (e) {
@@ -281,6 +387,7 @@
                     const modalBody = document.getElementById('genericModalBody');
                     if (modalBody) {
                         modalBody.innerHTML = html;
+                        applyRolePermitRules(false);
                     }
                 })
                 .catch(error => {
@@ -318,12 +425,10 @@
 
     var genericModalEl = document.getElementById('genericModal');
     if (genericModalEl) {
-        genericModalEl.addEventListener('hidden.bs.modal', function (event) {
-            // Blur any active element inside the modal so focus isn't trapped/hidden
+        genericModalEl.addEventListener('hidden.bs.modal', function () {
             if (document.activeElement) {
                 document.activeElement.blur();
             }
         });
     }
-
 </script>

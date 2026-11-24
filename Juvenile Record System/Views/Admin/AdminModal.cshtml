@@ -22,6 +22,12 @@
 <!-- Assign Role Modal -->
 @if (actionType == "assignRole")
 {
+    var selectedPermits = ViewBag.SelectedPermits as string[] ?? new string[0];
+    Func<string, IHtmlString> checkedAttr = m =>
+        selectedPermits.Contains(m, StringComparer.OrdinalIgnoreCase)
+            ? new HtmlString(" checked=\"checked\"")
+            : new HtmlString(string.Empty);
+
     using (Html.BeginForm("AssignRole", "Admin", FormMethod.Post, new { id = "adminModalForm" }))
     {
         @Html.AntiForgeryToken()
@@ -45,16 +51,83 @@
 
         <!-- Role Assignment Selection -->
         <div class="mb-4">
-            <label for="RoleId" class="form-label fw-bold text-dark small">Assign Role / Permit Level</label>
+            <label for="rolePermitSelect" class="form-label fw-bold text-dark small">Assign Role / Permit Level</label>
 
             @Html.DropDownListFor(
                 m => m.RoleId,
                 (SelectList)ViewBag.AvailableRoles,
                 "-- Select Role / Permit --",
-                new { @class = "form-select shadow-none py-2", @required = "required" }
+                new { @class = "form-select shadow-none py-2", @id = "rolePermitSelect", @required = "required" }
             )
 
             <div class="form-text small text-muted">Select the administrative permission level for this officer account.</div>
+        </div>
+
+        <!-- Module Access Checkboxes -->
+        <div class="mb-4" id="permitCheckboxesWrapper" data-saved-permits="@string.Join(",", selectedPermits)">
+            <label class="form-label fw-bold text-dark small d-block mb-2">Checkpoint &amp; System Module Permits</label>
+            <div class="p-3 bg-light rounded-3 border">
+                <div class="row g-2">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox enforcement-default" type="checkbox" name="selectedPermits" value="ScanBiometrics" id="permitScan" @checkedAttr("ScanBiometrics") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitScan">
+                                    Scan Face ID &amp; Biometrics <span class="badge bg-secondary-subtle text-secondary border ms-1 checkpoint-lock-badge d-none">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox enforcement-default" type="checkbox" name="selectedPermits" value="Authenticate" id="permitAuth" @checkedAttr("Authenticate") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitAuth">
+                                    Authenticate Offender <span class="badge bg-secondary-subtle text-secondary border ms-1 checkpoint-lock-badge d-none">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox enforcement-default" type="checkbox" name="selectedPermits" value="CheckRecords" id="permitCheck" @checkedAttr("CheckRecords") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitCheck">
+                                    Check Offender Records <span class="badge bg-secondary-subtle text-secondary border ms-1 checkpoint-lock-badge d-none">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox enforcement-default" type="checkbox" name="selectedPermits" value="ManageProfile" id="permitManage" @checkedAttr("ManageProfile") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitManage">
+                                    Manage Offender Profile <span class="badge bg-secondary-subtle text-secondary border ms-1 checkpoint-lock-badge d-none">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox restricted-module" type="checkbox" name="selectedPermits" value="ProcessPenalty" id="permitPenalty" @checkedAttr("ProcessPenalty") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitPenalty">
+                                    Process Penalty <span class="badge bg-secondary-subtle text-secondary border ms-1 review-lock-badge" id="penaltyLockBadge">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input permit-checkbox restricted-module" type="checkbox" name="selectedPermits" value="JuvenileRecords" id="permitJuveniles" @checkedAttr("JuvenileRecords") />
+                                <label class="form-check-label small fw-medium text-dark" for="permitJuveniles">
+                                    Juvenile Records <span class="badge bg-secondary-subtle text-secondary border ms-1 review-lock-badge" id="juvenileLockBadge">Restricted</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-text small text-muted mt-2 mb-0" id="permitHelperNote">
+                    Enforcement Officer locks Process Penalty and Juvenile Records while unlocking standard checkpoint modules.
+                </div>
+            </div>
         </div>
 
         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
@@ -65,6 +138,23 @@
 }
 else if (actionType == "details")
 {
+    var officerPermits = ViewBag.OfficerPermits as string[] ?? new string[0];
+    bool isAdminPermits = officerPermits.Length == 1 &&
+                          string.Equals(officerPermits[0], "All Modules (Admin)", StringComparison.OrdinalIgnoreCase);
+
+    string displayName = !string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim() : Model.Username;
+    initials = "U";
+    if (!string.IsNullOrWhiteSpace(displayName))
+    {
+        var parts = displayName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        initials = parts.Length >= 2
+            ? (parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper()
+            : parts[0].Substring(0, 1).ToUpper();
+    }
+
+    var selectedPermits = ViewBag.SelectedPermits as string[] ?? new string[0];
+    Func<string, bool> isChecked = m => selectedPermits.Contains(m, StringComparer.OrdinalIgnoreCase);
+
     <!-- DETAILS VIEW MODE -->
     <div class="px-2">
         <!-- Officer Profile Header Card -->
@@ -74,11 +164,17 @@ else if (actionType == "details")
             </div>
             <div>
                 <h5 class="fw-bold text-dark mb-1 fs-5">@Model.FullName</h5>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace small">
                         @Model.FormattedUserId
                     </span>
                     <span class="text-muted small">• @@@Model.Username</span>
+                    @if (Model.Role != null && !string.IsNullOrWhiteSpace(Model.Role.RoleName))
+                    {
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                            @Model.Role.RoleName
+                        </span>
+                    }
                 </div>
             </div>
         </div>
@@ -89,7 +185,7 @@ else if (actionType == "details")
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Account Status</span>
                     <div>
-                        @if (Model.AccountStatus == "Active")
+                        @if (string.Equals(Model.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
                         {
                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">Active</span>
                         }
@@ -100,40 +196,75 @@ else if (actionType == "details")
                     </div>
                 </div>
             </div>
+
             <div class="col-6">
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Officer ID</span>
                     <span class="fw-bold text-dark font-monospace">@Model.FormattedUserId</span>
                 </div>
             </div>
+
             <div class="col-6">
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Email Address</span>
                     <span class="text-dark fw-medium">@(string.IsNullOrWhiteSpace(Model.Email) ? "Not specified" : Model.Email)</span>
                 </div>
             </div>
+
             <div class="col-6">
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Phone Number</span>
                     <span class="text-dark fw-medium">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "Not specified" : Model.PhoneNumber)</span>
                 </div>
             </div>
+
             <div class="col-6">
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Birthdate</span>
                     <span class="text-dark fw-medium">@(Model.Birthdate.HasValue ? Model.Birthdate.Value.ToString("MMMM dd, yyyy") : "Not specified")</span>
                 </div>
             </div>
+
             <div class="col-6">
                 <div class="p-3 bg-light rounded-3 border h-100">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Registered Date</span>
                     <span class="text-dark fw-medium">@Model.CreatedAt.ToString("MMMM dd, yyyy hh:mm tt")</span>
                 </div>
             </div>
+
             <div class="col-12">
                 <div class="p-3 bg-light rounded-3 border">
                     <span class="text-secondary small text-uppercase fw-semibold d-block mb-1">Home Address</span>
                     <span class="text-dark fw-medium">@(string.IsNullOrWhiteSpace(Model.HomeAddress) ? "Not specified" : Model.HomeAddress)</span>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="p-3 bg-light rounded-3 border">
+                    <span class="text-secondary small text-uppercase fw-semibold d-block mb-2">Module Permits</span>
+
+                    @if (isAdminPermits)
+                    {
+                        <span class="badge bg-dark text-white px-3 py-1 rounded-pill">All Modules (Admin)</span>
+                    }
+                    else if (officerPermits.Length == 0)
+                    {
+                        <span class="text-muted small fst-italic">No modules permitted</span>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var permit in officerPermits)
+                            {
+                                bool isRestricted = string.Equals(permit, "ProcessPenalty", StringComparison.OrdinalIgnoreCase) ||
+                                                    string.Equals(permit, "JuvenileRecords", StringComparison.OrdinalIgnoreCase);
+
+                                <span class="badge @(isRestricted ? "bg-warning-subtle text-dark border border-warning-subtle" : "bg-white text-dark border") px-2 py-1">
+                                    @permit
+                                </span>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>

@@ -19,7 +19,7 @@ public class JuvenilesController : Controller
             juveniles = juveniles.Where(j => j.FullName.Contains(searchString) || j.JuvenileId.ToString().Contains(searchString));
         }
 
-        return View(juveniles.ToList());
+        return View("~/Views/Enforcement/Juveniles.cshtml", juveniles.ToList());
     }
 
     // GET: Juveniles/Create (Register new juvenile profile)

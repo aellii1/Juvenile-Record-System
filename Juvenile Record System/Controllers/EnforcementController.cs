@@ -8,7 +8,7 @@ using Juvenile_Record_System.Helpers;
 namespace Juvenile_Record_System.Controllers
 {
     // Restrict access to Enforcement Officers and Admins
-    [AuthorizeRole("Enforcement Officer", "Admin", "Administrator")]
+    [AuthorizeRole("Enforcement Officer", "Enforcement", "Officer", "Review Officer")]
     public class EnforcementController : Controller
     {
         private JuvenileContext db = new JuvenileContext();
@@ -26,7 +26,7 @@ namespace Juvenile_Record_System.Controllers
         }
 
         // Module 2: Authenticate Offender
-        public ActionResult Authenticate()
+        public ActionResult AuthOffender()
         {
             return View();
         }
@@ -38,24 +38,9 @@ namespace Juvenile_Record_System.Controllers
         }
 
         // Module 4: Manage Offender Profile (Create New or Update Existing)
-        public ActionResult ManageProfile(int? id)
+        public ActionResult ManageProfile()
         {
-            if (id == null)
-            {
-                // Renders the Create New Offender Record view
-                return View("Create");
-            }
-            else
-            {
-                // Renders the Update Existing Offender Profile view
-                var offender = db.Users.Find(id);
-                if (offender == null)
-                {
-                    TempData["ErrorMessage"] = "Offender record not found.";
-                    return RedirectToAction("Index");
-                }
-                return View("Update", offender);
-            }
+            return View();
         }
 
         // Action Filter to automatically populate profile variables for the layout header/sidebar

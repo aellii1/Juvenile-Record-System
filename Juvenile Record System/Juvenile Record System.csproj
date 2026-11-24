@@ -174,13 +174,19 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\AuthenticationController.cs" />
+    <Compile Include="Controllers\AuthOffenderController.cs" />
+    <Compile Include="Controllers\CheckRecordsController.cs" />
     <Compile Include="Controllers\EnforcementController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\JuvenilesController.cs" />
+    <Compile Include="Controllers\ManageProfileController.cs" />
+    <Compile Include="Controllers\ProcessPenaltyController.cs" />
+    <Compile Include="Controllers\ScanBiometricsController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helper\AuthorizeRoleAttribute.cs" />
+    <Compile Include="Helper\PermitHelper.cs" />
     <Compile Include="Helper\PasswordHasher.cs" />
     <Compile Include="Models\AuditLog.cs" />
     <Compile Include="Models\Authentication.cs" />
@@ -257,9 +263,19 @@
     <Content Include="Views\Authentication\Login.cshtml" />
     <Content Include="Views\Shared\_MainLayout.cshtml" />
     <Content Include="Views\Enforcement\Index.cshtml" />
+    <Content Include="Views\Enforcement\CheckRecords.cshtml" />
+    <Content Include="Views\Enforcement\AuthOffender.cshtml" />
+    <Content Include="Views\Enforcement\ScanBiometrics.cshtml" />
+    <Content Include="Views\Enforcement\ProcessPenalty.cshtml" />
+    <Content Include="Views\Enforcement\Juveniles.cshtml" />
+    <Content Include="Views\Enforcement\ManageProfile.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Views\Juveniles\" />
+    <Folder Include="Views\ManageProfile\" />
+    <Folder Include="Views\Officer\" />
+    <Folder Include="Views\ProcessPenalty\" />
+    <Folder Include="Views\ScanBiometrics\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.rtl.min.css.map" />

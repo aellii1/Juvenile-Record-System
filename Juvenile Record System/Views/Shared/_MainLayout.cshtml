@@ -121,7 +121,7 @@
             font-size: 0.875rem;
         }
 
-        /* Hover profile*/
+        /* Hover profile */
         .user-profile-trigger {
             transition: background-color 0.2s ease, border-radius 0.2s ease;
             padding: 6px 12px;
@@ -147,14 +147,55 @@
 
         // Normalize role name check
         string roleName = (Session["RoleName"]?.ToString() ?? ViewBag.UserRole ?? "Administrator").Trim();
-        bool isEnforcement = roleName.Equals("Enforcement Officer", StringComparison.OrdinalIgnoreCase) ||
-                             roleName.Equals("Officer", StringComparison.OrdinalIgnoreCase);
+        bool isAdmin = roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                       roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase);
+        bool isReviewOfficer = roleName.Equals("Review Officer", StringComparison.OrdinalIgnoreCase);
+        bool isOfficerPanel = !isAdmin;
 
         int userId = Session["UserId"] != null ? Convert.ToInt32(Session["UserId"]) : 0;
         string formattedUserId = userId > 0 ? $"U-{userId:D3}" : "U-000";
 
-        string displayRole = isEnforcement ? "Enforcement Officer" : "Administrator";
-        string panelTitle = isEnforcement ? "Enforcement Panel" : "Admin Panel";
+        string displayRole = isAdmin ? "Administrator" : (isReviewOfficer ? "Review Officer" : "Enforcement Officer");
+        string panelTitle = isAdmin ? "Admin Panel" : (isReviewOfficer ? "Review Panel" : "Enforcement Panel");
+
+        // Resolve active module permits from Cache first, then Session
+        string[] activePermits = null;
+        if (userId > 0)
+        {
+            var permitMap = System.Web.HttpRuntime.Cache["UserPermitMap"] as System.Collections.Generic.Dictionary<int, string[]>;
+            if (permitMap != null && permitMap.TryGetValue(userId, out string[] cachedPermits))
+            {
+                activePermits = cachedPermits;
+            }
+        }
+
+        if (activePermits == null)
+        {
+            activePermits = Session["AllowedPermits"] as string[];
+        }
+
+        Func<string, bool> canAccess = (module) =>
+        {
+            if (isAdmin) return true;
+
+            // If custom permits were assigned for this officer, strictly enforce them
+            if (activePermits != null)
+            {
+                return activePermits.Contains(module, StringComparer.OrdinalIgnoreCase);
+            }
+
+            // Default fallback when no custom permit entry exists yet
+            if (isReviewOfficer)
+            {
+                return true;
+            }
+
+            return !string.Equals(module, "ProcessPenalty", StringComparison.OrdinalIgnoreCase) &&
+                   !string.Equals(module, "JuvenileRecords", StringComparison.OrdinalIgnoreCase);
+        };
+
+        bool hasCheckpointModules = canAccess("ScanBiometrics") || canAccess("Authenticate") || canAccess("CheckRecords") || canAccess("ManageProfile");
+        bool hasReviewModules = canAccess("ProcessPenalty") || canAccess("JuvenileRecords");
     }
 
     <!-- Sidebar Navigation -->
@@ -164,9 +205,9 @@
             <span class="text-secondary fw-semibold mt-1" style="font-size: 0.75rem;">@panelTitle</span>
         </div>
 
-        @if (!isEnforcement)
+        @if (!isOfficerPanel)
         {
-            //Admin Panel
+            // Admin Panel
             <ul class="list-unstyled components">
                 <li class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")">
                     <a href="@Url.Action("Index", "Admin")" class="text-decoration-none">
@@ -190,60 +231,88 @@
 
                 <li class="sidebar-category">System Data</li>
 
-                <li class="@(currentController == "Juveniles" && currentAction == "Index" ? "active" : "")">
-                    <a href="@Url.Action("Index", "Juveniles")" class="text-decoration-none">
-                        <i class="bi bi-folder2-open me-2"></i> Juvenile Records
-                    </a>
-                </li>
-
                 <li class="@(currentController == "Admin" && currentAction == "AuditLogs" ? "active" : "")">
                     <a href="@Url.Action("AuditLogs", "Admin")" class="text-decoration-none">
                         <i class="bi bi-clock-history me-2"></i> Audit Logs
                     </a>
                 </li>
             </ul>
-         } else
-         {
-            //Enforement Panel
-            <ul class="list-unstyled components">
-                <li class="@(currentController == "Enforcement" && currentAction == "Index" ? "active" : "")">
-                    <a href="@Url.Action("Index", "Enforcement")" class="text-decoration-none">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                </li>
+        }
+        else
+        {
+            // Officer / Enforcement / Review Panel
+    <ul class="list-unstyled components">
+        <li class="@(currentController == "Enforcement" && currentAction == "Index" ? "active" : "")">
+            <a href="@Url.Action("Index", "Enforcement")" class="text-decoration-none">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+        </li>
 
-                <li class="sidebar-category">Checkpoint Modules</li>
+        @if (hasCheckpointModules)
+        {
+            <li class="sidebar-category">Checkpoint Modules</li>
 
+            if (canAccess("ScanBiometrics"))
+            {
                 <li class="@(currentController == "Enforcement" && currentAction == "ScanBiometrics" ? "active" : "")">
                     <a href="@Url.Action("ScanBiometrics", "Enforcement")" class="text-decoration-none">
                         <i class="bi bi-upc-scan me-2"></i> Scan Face ID & Biometrics
                     </a>
                 </li>
+            }
 
-                <li class="@(currentController == "Enforcement" && currentAction == "Authenticate" ? "active" : "")">
-                    <a href="@Url.Action("Authenticate", "Enforcement")" class="text-decoration-none">
+            if (canAccess("Authenticate"))
+            {
+                <li class="@(currentController == "Enforcement" && currentAction == "AuthOffender" ? "active" : "")">
+                    <a href="@Url.Action("AuthOffender", "Enforcement")" class="text-decoration-none">
                         <i class="bi bi-fingerprint me-2"></i> Authenticate Offender
                     </a>
                 </li>
+            }
 
+            if (canAccess("CheckRecords"))
+            {
                 <li class="@(currentController == "Enforcement" && currentAction == "CheckRecords" ? "active" : "")">
                     <a href="@Url.Action("CheckRecords", "Enforcement")" class="text-decoration-none">
                         <i class="bi bi-journal-check me-2"></i> Check Offender Records
                     </a>
                 </li>
+            }
 
+            if (canAccess("ManageProfile"))
+            {
                 <li class="@(currentController == "Enforcement" && currentAction == "ManageProfile" ? "active" : "")">
                     <a href="@Url.Action("ManageProfile", "Enforcement")" class="text-decoration-none">
                         <i class="bi bi-person-badge me-2"></i> Manage Offender Profile
                     </a>
                 </li>
-                <li class="@(currentController == "Enforcement" && currentAction == "ProcessPenalty" ? "active" : "")">
-                    <a href="@Url.Action("ProcessPenalty", "Enforcement")" class="text-decoration-none">
+            }
+        }
+
+        @if (hasReviewModules)
+        {
+            <li class="sidebar-category">Review Modules</li>
+
+            if (canAccess("ProcessPenalty"))
+            {
+                <li class="@(currentController == "ProcessPenalty" && currentAction == "Index" ? "active" : "")">
+                    <a href="@Url.Action("Index", "ProcessPenalty")" class="text-decoration-none">
                         <i class="bi bi-exclamation-triangle me-2"></i> Process Penalty
                     </a>
                 </li>
-            </ul>
-         }
+            }
+
+            if (canAccess("JuvenileRecords"))
+            {
+                <li class="@(currentController == "Juveniles" && currentAction == "Index" ? "active" : "")">
+                    <a href="@Url.Action("Index", "Juveniles")" class="text-decoration-none">
+                        <i class="bi bi-folder2-open me-2"></i> Juvenile Records
+                    </a>
+                </li>
+            }
+        }
+    </ul>
+        }
 
         <div class="px-3 my-2">
             <hr style="border-color: rgba(255,255,255,0.1);" class="my-2">
@@ -258,8 +327,8 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <!-- Role Badge (Dynamic Color/Text) -->
-                <span class="badge @(isEnforcement ? "bg-primary" : "bg-dark") px-3 py-2 fw-medium shadow-sm" style="font-size: 0.8rem; border-radius: 6px;">
-                    Role: @displayRole
+                <span class="badge @(isOfficerPanel ? "bg-primary" : "bg-dark") px-3 py-2 fw-medium shadow-sm" style="font-size: 0.8rem; border-radius: 6px;">
+                    @displayRole
                 </span>
 
                 <!-- Profile Avatar + Dropdown Menu -->
